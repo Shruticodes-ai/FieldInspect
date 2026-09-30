@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIH26095 - Smart Inspection Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 p-8 font-sans">
+    <div class="max-w-5xl mx-auto space-y-6">
+        <header class="border-b border-slate-700 pb-4">
+            <h1 class="text-2xl font-bold text-emerald-400">SIH26095: MoSJE Real-Time Field Inspection Console</h1>
+            <p class="text-sm text-slate-400">Anti-Spoofing, Geo-Fenced & Offline-Sync Inspection Pipeline</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Inspection Controller -->
+            <div class="bg-slate-800 p-6 rounded-lg border border-slate-700 space-y-4">
+                <h2 class="text-lg font-semibold text-slate-200">Field Simulation Controls</h2>
+                
+                <button onclick="testValidSubmission()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded font-medium transition">
+                    Test 1: Valid In-Range Field Inspection
+                </button>
+                
+                <button onclick="testGeoViolation()" class="w-full bg-amber-600 hover:bg-amber-500 text-white py-3 rounded font-medium transition">
+                    Test 2: Geo-Fence Violation (> 100m)
+                </button>
+
+                <button onclick="testMockLocation()" class="w-full bg-rose-600 hover:bg-rose-500 text-white py-3 rounded font-medium transition">
+                    Test 3: Spoofed / Mock Location Detected
+                </button>
+
+                <button onclick="testDuplicatePhoto()" class="w-full bg-purple-600 hover:bg-purple-500 text-white py-3 rounded font-medium transition">
+                    Test 4: Recycled / Duplicate Image Fraud
+                </button>
+            </div>
+
+            <!-- Live Audit Log Panel -->
+            <div class="bg-slate-800 p-6 rounded-lg border border-slate-700 flex flex-col">
+                <h2 class="text-lg font-semibold text-slate-200 mb-2">Real-Time Verification Log</h2>
+                <pre id="auditLog" class="bg-slate-950 p-4 rounded text-xs font-mono text-emerald-400 h-80 overflow-y-auto border border-slate-800 whitespace-pre-wrap">Ready for inspection payloads...</pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function sendPayload(payload) {
+            const logBox = document.getElementById('auditLog');
+            logBox.innerText = "Transmitting inspection sync packet...";
+            
+            try {
+                const res = await fetch('/api/v1/inspections/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                logBox.innerText = JSON.stringify(data, null, 2);
+            } catch (err) {
+                logBox.innerText = "Error transmitting packet: " + err;
+            }
+        }
+
+        function testValidSubmission() {
+            sendPayload({
+                inspector_id: "INS_9982",
+                facility_id: "NGO_DELHI_04",
+                user_lat: 28.6139, user_lng: 77.2090,
+                target_lat: 28.6140, target_lng: 77.2091,
+                is_mock_location: false,
+                photo_hash: "unique_photo_" + Date.now(),
+                checklist_data: { "sanitation_ok": true, "infrastructure_score": 9 }
+            });
+        }
+
+        function testGeoViolation() {
+            sendPayload({
+                inspector_id: "INS_9982",
+                facility_id: "NGO_DELHI_04",
+                user_lat: 28.6139, user_lng: 77.2090,
+                target_lat: 28.7041, target_lng: 77.1025,
+                is_mock_location: false,
+                photo_hash: "unique_photo_" + Date.now(),
+                checklist_data: { "sanitation_ok": true }
+            });
+        }
+
+        function testMockLocation() {
+            sendPayload({
+                inspector_id: "INS_9982",
+                facility_id: "NGO_DELHI_04",
+                user_lat: 28.6139, user_lng: 77.2090,
+                target_lat: 28.6139, target_lng: 77.2090,
+                is_mock_location: true,
+                photo_hash: "unique_photo_" + Date.now(),
+                checklist_data: {}
+            });
+        }
+
+        function testDuplicatePhoto() {
+            sendPayload({
+                inspector_id: "INS_9982",
+                facility_id: "NGO_DELHI_04",
+                user_lat: 28.6139, user_lng: 77.2090,
+                target_lat: 28.6139, target_lng: 77.2090,
+                is_mock_location: false,
+                photo_hash: "hash_fake_sample_123",
+                checklist_data: {}
+            });
+        }
+    </script>
+</body>
+</html>
